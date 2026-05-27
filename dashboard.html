@@ -1,29 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard</title>
+  <title>Dashboard Feed (Real Try)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: #f2f2f2;
+    }
+
+    .header {
+      background: #1877f2;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .profile {
+      background: white;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    img { border-radius: 50%; }
+
+    .feed {
+      margin: 10px;
+    }
+
+    .post {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+    }
+
+    .status {
+      background: #fff3cd;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .like { background: #1877f2; color: white; }
+    .comment { background: #42b72a; color: white; }
+    .share { background: #f02849; color: white; }
+  </style>
 </head>
+
 <body>
 
-<h1>User Dashboard</h1>
+<div class="header">
+  <h2>Real Feed Dashboard</h2>
+</div>
 
-<img id="photo" width="100" style="border-radius:50%"><br><br>
+<div class="profile">
+  <img id="photo" width="100"><br>
+  <h3 id="name"></h3>
+  <p id="id"></p>
+  <p id="email"></p>
+</div>
 
-<h3 id="name"></h3>
-<p id="id"></p>
+<div class="status" id="status">
+  🔄 Trying to fetch real Facebook feed...
+</div>
+
+<div class="feed" id="feed"></div>
 
 <script>
 const params = new URLSearchParams(window.location.search);
 
-document.getElementById("name").innerText =
-  "Name: " + params.get("name");
+// USER DATA
+document.getElementById("name").innerText = params.get("name");
+document.getElementById("id").innerText = "ID: " + params.get("id");
+document.getElementById("email").innerText = params.get("email") || "";
+document.getElementById("photo").src = params.get("photo");
 
-document.getElementById("id").innerText =
-  "ID: " + params.get("id");
+// FEED AREA
+const feed = document.getElementById("feed");
+const status = document.getElementById("status");
 
-document.getElementById("photo").src =
-  params.get("photo");
+// =======================
+// REAL API TRY (Facebook Graph)
+// =======================
+async function loadFeed() {
+  try {
+
+    const accessToken = params.get("token"); // if available
+
+    if (!accessToken) {
+      throw new Error("No access token available");
+    }
+
+    const res = await fetch(
+      `https://graph.facebook.com/me/feed?access_token=${accessToken}`
+    );
+
+    const data = await res.json();
+
+    if (!data.data || data.error) {
+      throw new Error("Feed not available");
+    }
+
+    status.innerText = "✅ Real Facebook Feed Loaded";
+
+    data.data.forEach(post => {
+      const div = document.createElement("div");
+      div.className = "post";
+
+      div.innerHTML = `
+        <b>Facebook Post</b>
+        <p>${post.message || "No text"}</p>
+
+        <button class="btn like">Like</button>
+        <button class="btn comment">Comment</button>
+        <button class="btn share">Share</button>
+      `;
+
+      feed.appendChild(div);
+    });
+
+  } catch (e) {
+
+    console.log("FB Feed error:", e.message);
+
+    status.innerText = "⚠️ Real feed not available — showing demo feed";
+
+    // =======================
+    // FALLBACK FEED
+    // =======================
+    const fake = [
+      { user: "Friend A", text: "Fallback post 1" },
+      { user: "Friend B", text: "Fallback post 2" },
+      { user: "Friend C", text: "Fallback post 3" }
+    ];
+
+    fake.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "post";
+
+      div.innerHTML = `
+        <b>${p.user}</b>
+        <p>${p.text}</p>
+
+        <button class="btn like">Like</button>
+        <button class="btn comment">Comment</button>
+        <button class="btn share">Share</button>
+      `;
+
+      feed.appendChild(div);
+    });
+  }
+}
+
+loadFeed();
 </script>
 
 </body>
