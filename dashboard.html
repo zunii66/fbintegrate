@@ -1,172 +1,231 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard Feed (Real Try)</title>
+  <title>Facebook Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     body {
-      font-family: Arial;
-      margin: 0;
-      background: #f2f2f2;
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      background: #f0f2f5;
     }
-
-    .header {
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .post {
+      border-left: 4px solid #1877f2;
+    }
+    button {
       background: #1877f2;
       color: white;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .profile {
-      background: white;
-      padding: 15px;
-      margin: 10px;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    img { border-radius: 50%; }
-
-    .feed {
-      margin: 10px;
-    }
-
-    .post {
-      background: white;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-    }
-
-    .status {
-      background: #fff3cd;
-      padding: 10px;
-      margin: 10px;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-
-    .btn {
-      padding: 8px 12px;
-      margin: 5px;
       border: none;
+      padding: 8px 16px;
       border-radius: 5px;
       cursor: pointer;
+      margin: 5px;
     }
-
-    .like { background: #1877f2; color: white; }
-    .comment { background: #42b72a; color: white; }
-    .share { background: #f02849; color: white; }
+    .reaction-btn {
+      background: #e4e6eb;
+      color: black;
+    }
+    .counter {
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+    .flex {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
   </style>
 </head>
-
 <body>
 
-<div class="header">
-  <h2>Real Feed Dashboard</h2>
+<h1>📱 Facebook Dashboard</h1>
+
+<div class="card" id="userInfo">
+  <div class="flex">
+    <img id="photo" width="80" style="border-radius:50%">
+    <div>
+      <h3 id="name"></h3>
+      <p id="id"></p>
+      <p>👥 Friends: <span id="friendCount">Loading...</span></p>
+    </div>
+  </div>
 </div>
 
-<div class="profile">
-  <img id="photo" width="100"><br>
-  <h3 id="name"></h3>
-  <p id="id"></p>
-  <p id="email"></p>
+<div class="card">
+  <h3>📰 Page Posts (News Feed)</h3>
+  <div id="postsContainer">Loading posts...</div>
 </div>
-
-<div class="status" id="status">
-  🔄 Trying to fetch real Facebook feed...
-</div>
-
-<div class="feed" id="feed"></div>
 
 <script>
+// URL se parameters le lo
 const params = new URLSearchParams(window.location.search);
+const accessToken = params.get("access_token"); // Facebook se mila token
+const pageId = "61589300180597"; // Aapki page ID
+const postId = "122104686663310006"; // Aapki post ID
 
-// USER DATA
-document.getElementById("name").innerText = params.get("name");
-document.getElementById("id").innerText = "ID: " + params.get("id");
-document.getElementById("email").innerText = params.get("email") || "";
-document.getElementById("photo").src = params.get("photo");
+// User info show karo
+document.getElementById("name").innerText = "Name: " + (params.get("name") || "User");
+document.getElementById("id").innerText = "ID: " + (params.get("id") || "N/A");
+document.getElementById("photo").src = params.get("photo") || "https://via.placeholder.com/80";
 
-// FEED AREA
-const feed = document.getElementById("feed");
-const status = document.getElementById("status");
-
-// =======================
-// REAL API TRY (Facebook Graph)
-// =======================
-async function loadFeed() {
+// 1️⃣ Friends Count fetch karo
+async function getFriendsCount() {
+  if (!accessToken) {
+    document.getElementById("friendCount").innerText = "Login required";
+    return;
+  }
+  
   try {
-
-    const accessToken = params.get("token"); // if available
-
-    if (!accessToken) {
-      throw new Error("No access token available");
-    }
-
-    const res = await fetch(
-      `https://graph.facebook.com/me/feed?access_token=${accessToken}`
-    );
-
+    const res = await fetch(`https://graph.facebook.com/me/friends?fields=summary&access_token=${accessToken}`);
     const data = await res.json();
-
-    if (!data.data || data.error) {
-      throw new Error("Feed not available");
+    
+    if (data.summary) {
+      document.getElementById("friendCount").innerText = data.summary.total_count;
+    } else {
+      document.getElementById("friendCount").innerText = "0 (Only app users)";
     }
-
-    status.innerText = "✅ Real Facebook Feed Loaded";
-
-    data.data.forEach(post => {
-      const div = document.createElement("div");
-      div.className = "post";
-
-      div.innerHTML = `
-        <b>Facebook Post</b>
-        <p>${post.message || "No text"}</p>
-
-        <button class="btn like">Like</button>
-        <button class="btn comment">Comment</button>
-        <button class="btn share">Share</button>
-      `;
-
-      feed.appendChild(div);
-    });
-
-  } catch (e) {
-
-    console.log("FB Feed error:", e.message);
-
-    status.innerText = "⚠️ Real feed not available — showing demo feed";
-
-    // =======================
-    // FALLBACK FEED
-    // =======================
-    const fake = [
-      { user: "Friend A", text: "Fallback post 1" },
-      { user: "Friend B", text: "Fallback post 2" },
-      { user: "Friend C", text: "Fallback post 3" }
-    ];
-
-    fake.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "post";
-
-      div.innerHTML = `
-        <b>${p.user}</b>
-        <p>${p.text}</p>
-
-        <button class="btn like">Like</button>
-        <button class="btn comment">Comment</button>
-        <button class="btn share">Share</button>
-      `;
-
-      feed.appendChild(div);
-    });
+  } catch(e) {
+    document.getElementById("friendCount").innerText = "Error fetching";
   }
 }
 
-loadFeed();
+// 2️⃣ Page Posts (News Feed) fetch karo
+async function getPagePosts() {
+  if (!accessToken) {
+    document.getElementById("postsContainer").innerHTML = "Need login first";
+    return;
+  }
+  
+  document.getElementById("postsContainer").innerHTML = "Fetching posts...";
+  
+  try {
+    const res = await fetch(`https://graph.facebook.com/${pageId}/feed?fields=id,message,created_time,full_picture,reactions.summary(true),comments.summary(true),shares&limit=5&access_token=${accessToken}`);
+    const data = await res.json();
+    
+    if (!data.data || data.data.length === 0) {
+      document.getElementById("postsContainer").innerHTML = "No posts found";
+      return;
+    }
+    
+    let html = '';
+    for (let post of data.data) {
+      html += `
+        <div class="card post" id="post-${post.id}">
+          <small>📅 ${new Date(post.created_time).toLocaleString()}</small>
+          <p>${post.message || "No text"}</p>
+          ${post.full_picture ? `<img src="${post.full_picture}" width="100%">` : ''}
+          <div class="flex" style="margin-top:10px">
+            <button class="reaction-btn" onclick="getReactions('${post.id}')">❤️ Reactions</button>
+            <button class="reaction-btn" onclick="getComments('${post.id}')">💬 Comments</button>
+            <button class="reaction-btn" onclick="getShares('${post.id}')">🔄 Shares</button>
+          </div>
+          <div id="stats-${post.id.replace(/[^a-zA-Z0-9]/g, '_')}" style="margin-top:10px"></div>
+        </div>
+      `;
+    }
+    document.getElementById("postsContainer").innerHTML = html;
+    
+  } catch(e) {
+    document.getElementById("postsContainer").innerHTML = "Error: " + e.message;
+  }
+}
+
+// 3️⃣ Post ke Reactions fetch karo
+window.getReactions = async function(postId) {
+  const containerId = "stats-" + postId.replace(/[^a-zA-Z0-9]/g, '_');
+  const container = document.getElementById(containerId);
+  container.innerHTML = "Loading reactions...";
+  
+  try {
+    const res = await fetch(`https://graph.facebook.com/${postId}/reactions?summary=true&access_token=${accessToken}`);
+    const data = await res.json();
+    container.innerHTML = `❤️ Total Reactions: ${data.summary?.total_count || 0}`;
+  } catch(e) {
+    container.innerHTML = "Reactions: Error";
+  }
+}
+
+// 4️⃣ Post ke Comments fetch karo
+window.getComments = async function(postId) {
+  const containerId = "stats-" + postId.replace(/[^a-zA-Z0-9]/g, '_');
+  const container = document.getElementById(containerId);
+  container.innerHTML = "Loading comments...";
+  
+  try {
+    const res = await fetch(`https://graph.facebook.com/${postId}/comments?summary=true&access_token=${accessToken}`);
+    const data = await res.json();
+    container.innerHTML = `💬 Total Comments: ${data.summary?.total_count || 0}`;
+  } catch(e) {
+    container.innerHTML = "Comments: Error";
+  }
+}
+
+// 5️⃣ Shares fetch karo
+window.getShares = async function(postId) {
+  const containerId = "stats-" + postId.replace(/[^a-zA-Z0-9]/g, '_');
+  const container = document.getElementById(containerId);
+  container.innerHTML = "Loading shares...";
+  
+  try {
+    const res = await fetch(`https://graph.facebook.com/${postId}?fields=shares&access_token=${accessToken}`);
+    const data = await res.json();
+    container.innerHTML = `🔄 Total Shares: ${data.shares?.count || 0}`;
+  } catch(e) {
+    container.innerHTML = "Shares: Error";
+  }
+}
+
+// 🚀 Specific post se reaction/comments lao (aap diye gaye link ke liye)
+async function getSpecificPostData() {
+  if (!accessToken) return;
+  
+  try {
+    // Specific post ke reactions, comments, shares
+    const res = await fetch(`https://graph.facebook.com/${postId}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${accessToken}`);
+    const data = await res.json();
+    
+    console.log("Specific Post Data:", data);
+    
+    let specificHtml = `
+      <div class="card">
+        <h4>📌 Specific Post (ID: ${postId})</h4>
+        <p>❤️ Reactions: ${data.reactions?.summary?.total_count || 0}</p>
+        <p>💬 Comments: ${data.comments?.summary?.total_count || 0}</p>
+        <p>🔄 Shares: ${data.shares?.count || 0}</p>
+      </div>
+    `;
+    
+    // Top pe dikhao
+    const container = document.getElementById("postsContainer");
+    container.innerHTML = specificHtml + container.innerHTML;
+    
+  } catch(e) {
+    console.log("Specific post error:", e);
+  }
+}
+
+// Sab kuch run karo
+if (accessToken) {
+  getFriendsCount();
+  getPagePosts();
+  getSpecificPostData();
+} else {
+  document.getElementById("friendCount").innerText = "Login required";
+  document.getElementById("postsContainer").innerHTML = "⚠️ Please login with Facebook first (access_token missing)";
+}
 </script>
 
 </body>
