@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<h1>User Dashboard</h1>
+
+<img id="photo" width="100" style="border-radius:50%"><br><br>
+
+<h3 id="name"></h3>
+<p id="id"></p>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+
+document.getElementById("name").innerText =
+  "Name: " + params.get("name");
+
+document.getElementById("id").innerText =
+  "ID: " + params.get("id");
+
+document.getElementById("photo").src =
+  params.get("photo");
+</script>
+
+</body>
+</html>
